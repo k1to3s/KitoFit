@@ -7,4 +7,7 @@ export async function POST(req:Request){try{checkOrigin(req);const input=await b
  if(!input.password)throw new ApiError(400,'A password of at least 8 characters is required.');
  if(input.action==='signup'){const {error}=await s.auth.signUp({email:input.email,password:input.password,options:{emailRedirectTo:redirect}});if(error)throw new ApiError(400,'Unable to create account. Check your details or try signing in.');return json({message:'Check your email to verify your account, then sign in.'});}
  const {data,error}=await s.auth.signInWithPassword({email:input.email,password:input.password});if(error||!data.session)throw new ApiError(401,'Sign-in failed. Check your credentials and verify your email.');return json({session:{access_token:data.session.access_token,refresh_token:data.session.refresh_token}});
-}catch(e){return failure(e);}}
+}catch(e){
+  console.error('AUTH ERROR:', e);
+  return failure(e);
+}
