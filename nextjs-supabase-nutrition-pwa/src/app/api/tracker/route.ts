@@ -1,0 +1,36 @@
+import { db } from '@/db';
+import { foodLogs,profiles,trackerRecords,supplements,supplementLogs,workoutSessions,workouts,customFoods,supplementSchedules } from '@/db/schema';
+import { and,eq,sql,desc } from 'drizzle-orm';
+import { z } from 'zod';
+import { identity,json,failure,body,foodSchema,dateSchema,limit,audit,ApiError } from '@/lib/security';
+import { initialFoods,defaultTargets } from '@/lib/demo';
+const tables={water:trackerRecords,supplement:supplements,supplementLog:supplementLogs,workout:workoutSessions,template:workouts,custom:customFoods,schedule:supplementSchedules};
+const targets=z.object({calories:z.number().min(500).max(10000),protein:z.number().min(10).max(500),carbs:z.number().min(0).max(1000),fat:z.number().min(10).max(300),water:z.number().min(250).max(10000)}).strict();
+const set=z.object({exercise:z.string().trim().min(1).max(100),sets:z.number().int().min(1).max(50),reps:z.number().int().min(1).max(1000),weight:z.number().min(0).max(1000),rpe:z.number().min(1).max(10)});
+const entitySchema=z.discriminatedUnion('resource',[
+ z.object({resource:z.literal('water'),data:z.object({amount:z.number().int().min(0).max(15000)})}),
+ z.object({resource:z.literal('supplement'),data:z.object({name:z.string().trim().min(1).max(100),dose:z.string().trim().min(1).max(80),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),notes:z.string().max(500).default('')})}),
+ z.object({resource:z.literal('supplementLog'),data:z.object({supplementId:z.string().uuid(),name:z.string().max(100),dose:z.string().max(80),time:z.string().max(40),notes:z.string().max(500).default('')})}),
+ z.object({resource:z.literal('workout'),data:z.object({name:z.string().trim().min(1).max(100),duration:z.number().min(1).max(600),exercises:z.array(set).min(1).max(50),notes:z.string().max(1000).default('')})}),
+ z.object({resource:z.literal('template'),data:z.object({name:z.string().trim().min(1).max(100),exercises:z.array(set).min(1).max(50)})}),
+ z.object({resource:z.literal('custom'),data:z.object({name:z.string().trim().min(1).max(150),calories:z.number().min(0).max(1000),protein:z.number().min(0).max(100),carbs:z.number().min(0).max(100),fat:z.number().min(0).max(100)})}),
+ z.object({resource:z.literal('schedule'),data:z.object({name:z.string().min(1).max(100),nextAt:z.string().datetime(),enabled:z.boolean(),intervalHours:z.number().int().min(1).max(168)})})
+]);
+export async function GET(req:Request){try{
+ const user=await identity(req);await limit(`read:${user.id}`,120);
+ const q=z.object({date:dateSchema}).strict().parse(Object.fromEntries(new URL(req.url).searchParams));
+ await db.transaction(async tx=>{await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${user.id}))`);const existing=await tx.select().from(profiles).where(eq(profiles.userId,user.id)).limit(1);if(!existing.length){await tx.insert(profiles).values({userId:user.id,date:q.date,data:{...defaultTargets,name:user.demo?'Alex':'You'}});if(user.demo){await tx.insert(foodLogs).values(initialFoods.map(f=>({...f,userId:user.id,date:q.date})));await tx.insert(trackerRecords).values({userId:user.id,date:q.date,data:{amount:1500}});await tx.insert(supplements).values([{name:'Vitamin D3',dose:'2,000 IU',time:'08:00',notes:'With breakfast'},{name:'Omega-3',dose:'1,000 mg',time:'08:00',notes:'With breakfast'},{name:'Magnesium glycinate',dose:'200 mg',time:'21:00',notes:'Before bed'}].map(data=>({userId:user.id,date:q.date,data})));const supps=await tx.select().from(supplements).where(eq(supplements.userId,user.id));await tx.insert(supplementLogs).values(supps.slice(0,2).map(s=>({userId:user.id,date:q.date,data:{supplementId:s.id,...s.data,time:'08:00'}})));}}});
+ const [foods,profile,water,supps,taken,sessions,templates,history]=await Promise.all([
+ db.select().from(foodLogs).where(and(eq(foodLogs.userId,user.id),eq(foodLogs.date,q.date))).orderBy(foodLogs.createdAt),db.select().from(profiles).where(eq(profiles.userId,user.id)).limit(1),db.select().from(trackerRecords).where(and(eq(trackerRecords.userId,user.id),eq(trackerRecords.date,q.date))).orderBy(desc(trackerRecords.createdAt)).limit(1),db.select().from(supplements).where(eq(supplements.userId,user.id)).limit(100),db.select().from(supplementLogs).where(and(eq(supplementLogs.userId,user.id),eq(supplementLogs.date,q.date))),db.select().from(workoutSessions).where(eq(workoutSessions.userId,user.id)).orderBy(desc(workoutSessions.createdAt)).limit(100),db.select().from(workouts).where(eq(workouts.userId,user.id)).limit(100),db.select().from(foodLogs).where(and(eq(foodLogs.userId,user.id),sql`${foodLogs.date} >= ${new Date(Date.parse(q.date)-6*86400000).toISOString().slice(0,10)}`,sql`${foodLogs.date} <= ${q.date}`))]);
+ return json({foods,targets:profile[0]?.data||defaultTargets,water:water[0]?.data.amount||0,supplements:supps,taken,workouts:sessions,templates,history,demo:user.demo});
+}catch(e){return failure(e);}}
+export async function POST(req:Request){try{
+ const user=await identity(req);await limit(`write:${user.id}`);const input=await body(req,z.object({resource:z.string(),date:dateSchema,data:z.unknown(),id:z.string().uuid().optional()}).strict());
+ if(input.resource==='food'){const data=foodSchema.parse({...input.data as object,date:input.date});if(input.id){const [row]=await db.update(foodLogs).set(data).where(and(eq(foodLogs.id,input.id),eq(foodLogs.userId,user.id))).returning();if(!row)throw new ApiError(404,'Entry not found.');return json(row);}const [row]=await db.insert(foodLogs).values({...data,userId:user.id}).returning();await audit(user.id,'food.created');return json(row,201);}
+ if(input.resource==='targets'){const data=targets.parse(input.data);await db.update(profiles).set({data}).where(eq(profiles.userId,user.id));return json({ok:true});}
+ const parsed=entitySchema.parse(input);const table=tables[parsed.resource];
+ if(parsed.resource==='supplementLog'){const [s]=await db.select().from(supplements).where(and(eq(supplements.id,parsed.data.supplementId),eq(supplements.userId,user.id)));if(!s)throw new ApiError(404,'Supplement not found.');}
+ if(input.id){const [row]=await db.update(table).set({data:parsed.data,date:input.date}).where(and(eq(table.id,input.id),eq(table.userId,user.id))).returning();if(!row)throw new ApiError(404,'Entry not found.');return json(row);}
+ const [row]=await db.insert(table).values({userId:user.id,date:input.date,data:parsed.data}).returning();return json(row,201);
+}catch(e){return failure(e);}}
+export async function DELETE(req:Request){try{const user=await identity(req);await limit(`write:${user.id}`);const input=await body(req,z.object({resource:z.enum(['food','water','supplement','supplementLog','workout','template','custom','schedule']),id:z.string().uuid()}).strict());const table=input.resource==='food'?foodLogs:tables[input.resource];if(input.resource==='supplement')await db.delete(supplementLogs).where(and(eq(supplementLogs.userId,user.id),sql`${supplementLogs.data}->>'supplementId' = ${input.id}`));const deleted=await db.delete(table).where(and(eq(table.id,input.id),eq(table.userId,user.id))).returning({id:table.id});if(!deleted.length)throw new ApiError(404,'Entry not found.');await audit(user.id,`${input.resource}.deleted`);return json({ok:true});}catch(e){return failure(e);}}
