@@ -21,7 +21,76 @@ export async function POST(req:Request){try{
  if(!process.env.HF_API_TOKEN||!process.env.HF_FOOD_MODEL)return json(fallback);
  const bucket=String(Math.floor(Date.now()/300000));const [breaker]=await db.select().from(rateLimits).where(eq(rateLimits.key,`hf-failure:${bucket}`));if((breaker?.count||0)>=3)return json({...fallback,notes:['The photo service is taking a short break. Manual food entry is still available.']});
  const storage=serverSupabase(undefined,true).storage.from('meal-photos');const path=`${user.id}/${hash}.jpg`;const {error:uploadError}=await storage.upload(path,clean,{contentType:'image/jpeg',upsert:true});if(uploadError)throw new ApiError(503,'Private photo storage is unavailable. Use manual entry for now.');await audit(user.id,'photo.uploaded');
- let result:unknown;for(let attempt=0;attempt<2;attempt++){try{result=await new InferenceClient(process.env.HF_API_TOKEN).imageClassification({model:process.env.HF_FOOD_MODEL,provider:'hf-inference',data:new Blob([new Uint8Array(clean)],{type:'image/jpeg'})},{signal:AbortSignal.timeout(8000),retry_on_error:false});break;}catch{if(attempt===0)await new Promise(r=>setTimeout(r,600));}}
+let result: unknown;
+
+try {
+  const base64 = clean.toString('base64');
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': Bearer ${process.env.OPENROUTER_API_KEY},
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'openrouter/free',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: Identify the food in this photo.
+
+Return ONLY valid JSON in this exact format:
+{
+  "items": [
+    {
+      "name": "food name",
+      "confidence": 0.0
+    }
+  ]
+}
+
+List up to 3 foods. Confidence must be between 0 and 1.,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: data:image/jpeg;base64,${base64},
+              },
+            },
+          ],
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!response.ok) {
+    throw new Error(OpenRouter request failed: ${response.status});
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content;
+
+  if (typeof text !== 'string') {
+    throw new Error('OpenRouter returned no usable result');
+  }
+
+  const parsed = JSON.parse(text);
+  result = z.array(
+    z.object({
+      name: z.string().max(150),
+      confidence: z.number().min(0).max(1),
+    })
+  ).parse(parsed.items);
+} catch (error) {
+  console.error(
+    'OpenRouter food recognition failed:',
+    error instanceof Error ? error.message : 'Unknown error'
+  );
+}
  if(!result){await db.insert(rateLimits).values({key:`hf-failure:${bucket}`,count:1,expiresAt:new Date((Number(bucket)+1)*300000)}).onConflictDoUpdate({target:rateLimits.key,set:{count:sql`${rateLimits.count}+1`}});return json(fallback);}
  const labels=z.array(z.object({label:z.string().max(150),score:z.number().min(0).max(1)})).parse(result).sort((a,b)=>b.score-a.score).slice(0,3);const items=labels.map(i=>({name:i.label.replaceAll('_',' '),confidence:i.score}));const matches:z.infer<typeof output>['matches']=[];const custom=await db.select().from(customFoods).where(eq(customFoods.userId,user.id));
  for(const item of items.slice(0,2)){const found=custom.find(f=>String(f.data.name).toLowerCase()===item.name.toLowerCase());if(found){const parsed=macros.safeParse(found.data);if(parsed.success)matches.push({name:item.name,source:'custom',macrosPer100g:parsed.data});}else try{const foods=await lookup(item.name);matches.push(...foods.slice(0,2).map(f=>({name:f.name,source:'openfoodfacts' as const,macrosPer100g:{calories:f.calories,protein:f.protein,carbs:f.carbs,fat:f.fat}})));}catch{}}
