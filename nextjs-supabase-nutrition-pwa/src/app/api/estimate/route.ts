@@ -22,10 +22,8 @@ export async function POST(req:Request){try{
  const bucket=String(Math.floor(Date.now()/300000));const [breaker]=await db.select().from(rateLimits).where(eq(rateLimits.key,`hf-failure:${bucket}`));if((breaker?.count||0)>=3)return json({...fallback,notes:['The photo service is taking a short break. Manual food entry is still available.']});
  const storage=serverSupabase(undefined,true).storage.from('meal-photos');const path=`${user.id}/${hash}.jpg`;const {error:uploadError}=await storage.upload(path,clean,{contentType:'image/jpeg',upsert:true});if(uploadError)throw new ApiError(503,'Private photo storage is unavailable. Use manual entry for now.');await audit(user.id,'photo.uploaded');
 let result: unknown;
-
 try {
   const base64 = clean.toString('base64');
-
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
