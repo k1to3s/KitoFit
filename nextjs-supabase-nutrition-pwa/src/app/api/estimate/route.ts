@@ -22,12 +22,14 @@ export async function POST(req:Request){try{
  const bucket=String(Math.floor(Date.now()/300000));const [breaker]=await db.select().from(rateLimits).where(eq(rateLimits.key,`hf-failure:${bucket}`));if((breaker?.count||0)>=3)return json({...fallback,notes:['The photo service is taking a short break. Manual food entry is still available.']});
  const storage=serverSupabase(undefined,true).storage.from('meal-photos');const path=`${user.id}/${hash}.jpg`;const {error:uploadError}=await storage.upload(path,clean,{contentType:'image/jpeg',upsert:true});if(uploadError)throw new ApiError(503,'Private photo storage is unavailable. Use manual entry for now.');await audit(user.id,'photo.uploaded');
 let result: unknown;
+
 try {
   const base64 = clean.toString('base64');
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': Bearer ${process.env.OPENROUTER_API_KEY},
+      Authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -38,24 +40,12 @@ try {
           content: [
             {
               type: 'text',
-              text: Identify the food in this photo.
-
-Return ONLY valid JSON in this exact format:
-{
-  "items": [
-    {
-      "name": "food name",
-      "confidence": 0.0
-    }
-  ]
-}
-
-List up to 3 foods. Confidence must be between 0 and 1.,
+              text: 'Identify the food in this photo. Return ONLY valid JSON in this exact format: {"items":[{"name":"food name","confidence":0.0}]} List up to 3 foods. Confidence must be between 0 and 1.',
             },
             {
               type: 'image_url',
               image_url: {
-                url: data:image/jpeg;base64,${base64},
+                url: 'data:image/jpeg;base64,' + base64,
               },
             },
           ],
@@ -66,23 +56,30 @@ List up to 3 foods. Confidence must be between 0 and 1.,
   });
 
   if (!response.ok) {
-    throw new Error(OpenRouter request failed: ${response.status});
+    throw new Error('OpenRouter request failed: ' + response.status);
   }
 
   const data = await response.json();
-  const text = data.choices?.[0]?.message?.content;
+  const text =
+    data.choices &&
+    data.choices[0] &&
+    data.choices[0].message &&
+    data.choices[0].message.content;
 
   if (typeof text !== 'string') {
     throw new Error('OpenRouter returned no usable result');
   }
 
   const parsed = JSON.parse(text);
-  result = z.array(
-    z.object({
-      name: z.string().max(150),
-      confidence: z.number().min(0).max(1),
-    })
-  ).parse(parsed.items);
+
+  result = z
+    .array(
+      z.object({
+        name: z.string().max(150),
+        confidence: z.number().min(0).max(1),
+      })
+    )
+    .parse(parsed.items);
 } catch (error) {
   console.error(
     'OpenRouter food recognition failed:',
