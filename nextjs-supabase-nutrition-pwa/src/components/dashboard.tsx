@@ -20,6 +20,7 @@ export default function Dashboard(){
  const notify=useCallback((text:string)=>setToast(text),[]);
  const reload=useCallback(async()=>{try{if(!supabase){setDialog('auth');return;}const session=(await supabase.auth.getSession()).data.session;if(!session){setDialog('auth');setReady(true);return;}const next=await api(`/api/tracker?date=${date}`);setData({...next,demo:false});if(next.username)setUserName(next.username);setReady(true);}catch(e){setDialog('auth');setData(d=>({...d,foods:[],water:0,demo:false}));}},[date]);
  useEffect(()=>{reload();},[reload]);
+ useEffect(()=>{const saved=localStorage.getItem('bloom-theme')==='dark';document.documentElement.dataset.theme=saved?'dark':'light';},[]);
  useEffect(()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});if(!supabase)return;const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{if(session){setUserName(session.user.email?.split('@')[0]||'there');if(event==='PASSWORD_RECOVERY')setDialog('recovery');else if(event==='SIGNED_IN'){setDialog('');setTimeout(()=>reload(),0);}}});return()=>subscription.unsubscribe();},[reload]);
  useEffect(()=>{if(toast){const id=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(id);}},[toast]);
  const changed=async(message:string)=>{setDialog('');await reload();notify(message);};
