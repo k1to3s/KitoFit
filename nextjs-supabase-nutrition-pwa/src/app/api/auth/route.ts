@@ -41,7 +41,7 @@ export async function POST(req:Request){
       }
     });
 
-    const redirect=process.env.NEXT_PUBLIC_APP_URL||new URL(req.url).origin;
+    const redirect=(process.env.NEXT_PUBLIC_APP_URL||new URL(req.url).origin).replace(/\/$/,'');
 
     if(input.action==='reset'){
       await s.auth.resetPasswordForEmail(input.email,{redirectTo:`${redirect}/?recovery=true`});
@@ -49,7 +49,7 @@ export async function POST(req:Request){
     }
 
     if(input.action==='resend'){
-      await s.auth.resend({type:'signup',email:input.email,options:{emailRedirectTo:redirect}});
+      await s.auth.resend({type:'signup',email:input.email,options:{emailRedirectTo:`${redirect}/auth/confirm`}});
       return json({message:'If eligible, a new verification email is on its way.'});
     }
 
@@ -59,7 +59,7 @@ export async function POST(req:Request){
       const {error}=await s.auth.signUp({
         email:input.email,
         password:input.password,
-        options:{emailRedirectTo:redirect}
+        options:{emailRedirectTo:`${redirect}/auth/confirm`}
       });
       if(error){
         console.error('Supabase signup error:',error.message,error.code,error.status);
