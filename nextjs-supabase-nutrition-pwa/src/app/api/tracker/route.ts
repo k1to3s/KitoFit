@@ -31,11 +31,11 @@ export async function POST(req:Request){try{
  const parsed=entitySchema.parse(input);const table=tables[parsed.resource];
  if(parsed.resource==='supplementLog'){const [s]=await db.select().from(supplements).where(and(eq(supplements.id,parsed.data.supplementId),eq(supplements.userId,user.id)));if(!s)throw new ApiError(404,'Supplement not found.');}
  if(input.id){const [row]=await db.update(table).set({data:parsed.data,date:input.date}).where(and(eq(table.id,input.id),eq(table.userId,user.id))).returning();if(!row)throw new ApiError(404,'Entry not found.');return json(row);}
- const [row]=await db.insert(table).values({userId:user.id,date:input.date,data:parsed.data}).returning();
+ if(parsed.resource==='schedule'&&parsed.data.supplementId){await db.delete(supplementSchedules).where(and(eq(supplementSchedules.userId,user.id),sql`${supplementSchedules.data}->>'supplementId' = ${parsed.data.supplementId}`));}const [row]=await db.insert(table).values({userId:user.id,date:input.date,data:parsed.data}).returning();
  if(parsed.resource==='supplement'){
    const supplementTime=parsed.data.time;
-   const timezone=typeof Intl!=='undefined'?undefined:undefined;
-   await db.insert(supplementSchedules).values({userId:user.id,date:input.date,data:{name:parsed.data.name,dose:parsed.data.dose,time:supplementTime,timezone:'UTC',nextAt:new Date().toISOString(),enabled:true,intervalHours:24,supplementId:row.id}}).onConflictDoNothing();
+   const timezone=parsed.data.timezone||'UTC';
+   await db.insert(supplementSchedules).values({userId:user.id,date:input.date,data:{name:parsed.data.name,dose:parsed.data.dose,time:supplementTime,timezone,nextAt:new Date().toISOString(),enabled:true,intervalHours:24,supplementId:row.id}}).onConflictDoNothing();
  }
  return json(row,201);
 }catch(e){return failure(e);}}
