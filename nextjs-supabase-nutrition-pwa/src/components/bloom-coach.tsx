@@ -103,7 +103,7 @@ export function BloomCoachDialog({ data, close, fullPage = false }: { data: Data
       'Nutrition numbers are tracking estimates, not medical prescriptions.',
       'If the user asks what to eat next, give at most 3 simple food choices with approximate portions and a one-line reason. Do not invent a detailed recipe, ingredient list, or cooking instructions unless the user explicitly asks for a recipe.',
       'Do not write long generic nutrition lectures. Prefer Bloom-specific numbers and choices from the supplied data. If the data is insufficient, say so briefly rather than making up facts.',
-      'If the user asks about workouts, use their recent workouts and avoid pretending you know exercises that are not in the data.'
+      'If the user asks about workouts, use their recent workouts and avoid pretending you know exercises that are not in the data.',
       'Bloom data: ' + JSON.stringify(context),
     ].join('\\n');
     const history = nextMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
