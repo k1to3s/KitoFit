@@ -144,3 +144,37 @@ html[data-theme="dark"] .card-bottom-link{color:#fff}
 
 /* Keep the interface cleaner by removing decorative subheaders. */
 .eyebrow,.workspace-label{display:none}
+
+/* Dark mode: fix remaining light cards and white-on-light text. */
+html[data-theme="dark"] .grow-card{
+  background:#000;
+  border-color:#444;
+  color:#fff;
+}
+html[data-theme="dark"] .grow-card h3{color:#fff}
+html[data-theme="dark"] .grow-card p{color:#aaa}
+html[data-theme="dark"] .grow-card button{color:#fff}
+html[data-theme="dark"] .grow-card .grow-icon{color:#fff}
+html[data-theme="dark"] .grow-card .grow-flower{color:#333}
+html[data-theme="dark"] .workout-card,
+html[data-theme="dark"] .workout-preview,
+html[data-theme="dark"] .workout-card .section-heading,
+html[data-theme="dark"] .workout-card .card-bottom-link{
+  background:#000;
+  color:#fff;
+}
+html[data-theme="dark"] .workout-card p,
+html[data-theme="dark"] .workout-card .muted{color:#aaa}
+html[data-theme="dark"] .workout-start{background:#000!important;color:#fff!important;border-color:#fff!important}
+html[data-theme="dark"] .workout-start:hover{background:#fff!important;color:#000!important}
+html[data-theme="dark"] .feature-card,
+html[data-theme="dark"] .large-card,
+html[data-theme="dark"] .progress-card,
+html[data-theme="dark"] .supplement-card{background:#000;color:#fff}
+html[data-theme="dark"] .feature-card p,
+html[data-theme="dark"] .large-card p,
+html[data-theme="dark"] .progress-card p{color:#aaa}
+html[data-theme="dark"] .card-bottom-link{background:#000;color:#fff;border-color:#444}
+html[data-theme="dark"] .card-bottom-link:hover{background:#fff;color:#000}
+html[data-theme="dark"] .settings-theme small{color:#aaa}
+html[data-theme="dark"] .profile small{color:#aaa}
