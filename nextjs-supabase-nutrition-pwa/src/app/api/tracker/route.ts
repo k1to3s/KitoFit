@@ -14,7 +14,7 @@ const entitySchema=z.discriminatedUnion('resource',[
  z.object({resource:z.literal('workout'),data:z.object({name:z.string().trim().min(1).max(100),duration:z.number().min(1).max(600),exercises:z.array(set).min(1).max(50),notes:z.string().max(1000).default('')})}),
  z.object({resource:z.literal('template'),data:z.object({name:z.string().trim().min(1).max(100),exercises:z.array(set).min(1).max(50)})}),
  z.object({resource:z.literal('custom'),data:z.object({name:z.string().trim().min(1).max(150),calories:z.number().min(0).max(1000),protein:z.number().min(0).max(100),carbs:z.number().min(0).max(100),fat:z.number().min(0).max(100)})}),
- z.object({resource:z.literal('schedule'),data:z.object({name:z.string().min(1).max(100),nextAt:z.string().datetime(),enabled:z.boolean(),intervalHours:z.number().int().min(1).max(168)})})
+ z.object({resource:z.literal('schedule'),data:z.object({name:z.string().min(1).max(100),dose:z.string().max(80).optional(),time:z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/),timezone:z.string().min(1).max(80),nextAt:z.string().datetime(),enabled:z.boolean(),intervalHours:z.number().int().min(1).max(168),supplementId:z.string().uuid().optional()})})
 ]);
 export async function GET(req:Request){try{
  const user=await identity(req);await limit(`read:${user.id}`,120);
@@ -31,6 +31,12 @@ export async function POST(req:Request){try{
  const parsed=entitySchema.parse(input);const table=tables[parsed.resource];
  if(parsed.resource==='supplementLog'){const [s]=await db.select().from(supplements).where(and(eq(supplements.id,parsed.data.supplementId),eq(supplements.userId,user.id)));if(!s)throw new ApiError(404,'Supplement not found.');}
  if(input.id){const [row]=await db.update(table).set({data:parsed.data,date:input.date}).where(and(eq(table.id,input.id),eq(table.userId,user.id))).returning();if(!row)throw new ApiError(404,'Entry not found.');return json(row);}
- const [row]=await db.insert(table).values({userId:user.id,date:input.date,data:parsed.data}).returning();return json(row,201);
+ const [row]=await db.insert(table).values({userId:user.id,date:input.date,data:parsed.data}).returning();
+ if(parsed.resource==='supplement'){
+   const supplementTime=parsed.data.time;
+   const timezone=typeof Intl!=='undefined'?undefined:undefined;
+   await db.insert(supplementSchedules).values({userId:user.id,date:input.date,data:{name:parsed.data.name,dose:parsed.data.dose,time:supplementTime,timezone:'UTC',nextAt:new Date().toISOString(),enabled:true,intervalHours:24,supplementId:row.id}}).onConflictDoNothing();
+ }
+ return json(row,201);
 }catch(e){return failure(e);}}
-export async function DELETE(req:Request){try{const user=await identity(req);await limit(`write:${user.id}`);const input=await body(req,z.object({resource:z.enum(['food','water','supplement','supplementLog','workout','template','custom','schedule']),id:z.string().uuid()}).strict());const table=input.resource==='food'?foodLogs:tables[input.resource];if(input.resource==='supplement')await db.delete(supplementLogs).where(and(eq(supplementLogs.userId,user.id),sql`${supplementLogs.data}->>'supplementId' = ${input.id}`));const deleted=await db.delete(table).where(and(eq(table.id,input.id),eq(table.userId,user.id))).returning({id:table.id});if(!deleted.length)throw new ApiError(404,'Entry not found.');await audit(user.id,`${input.resource}.deleted`);return json({ok:true});}catch(e){return failure(e);}}
+export async function DELETE(req:Request){try{const user=await identity(req);await limit(`write:${user.id}`);const input=await body(req,z.object({resource:z.enum(['food','water','supplement','supplementLog','workout','template','custom','schedule']),id:z.string().uuid()}).strict());const table=input.resource==='food'?foodLogs:tables[input.resource];if(input.resource==='supplement'){await db.delete(supplementLogs).where(and(eq(supplementLogs.userId,user.id),sql`${supplementLogs.data}->>'supplementId' = ${input.id}`));await db.delete(supplementSchedules).where(and(eq(supplementSchedules.userId,user.id),sql`${supplementSchedules.data}->>'supplementId' = ${input.id}`));}const deleted=await db.delete(table).where(and(eq(table.id,input.id),eq(table.userId,user.id))).returning({id:table.id});if(!deleted.length)throw new ApiError(404,'Entry not found.');await audit(user.id,`${input.resource}.deleted`);return json({ok:true});}catch(e){return failure(e);}}
