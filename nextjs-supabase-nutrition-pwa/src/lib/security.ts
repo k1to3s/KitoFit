@@ -38,7 +38,7 @@ export async function identity(req:Request,realOnly=true){
  const {data,error}=await client.auth.getUser(token);
  if(error||!data.user)throw new ApiError(401,'Please sign in again.');
  if(!data.user.email_confirmed_at)throw new ApiError(403,'Please verify your email first.');
- return {id:data.user.id,token,demo:false};
+ return {id:data.user.id,token,demo:false,email:data.user.email||''};
 }
 export async function audit(userId:string,action:string){await db.insert(auditLogs).values({userId,date:new Date().toISOString().slice(0,10),data:{action}});}
 export const dateSchema=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v);
