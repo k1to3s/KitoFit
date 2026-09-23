@@ -1,6 +1,6 @@
 import { CreateMLCEngine } from "@mlc-ai/web-llm";
 
-const MODEL_ID = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+const MODEL_ID = "Qwen2-0.5B-Instruct-q4f16_1-MLC";
 
 type CoachMessage = {
   role: "system" | "user" | "assistant";
