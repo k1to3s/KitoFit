@@ -297,3 +297,16 @@ html[data-theme="dark"] .coach-card{background:#1c1c1e;border-color:#38383a}.coa
 .coach-compose input{flex:1;min-width:0}
 .coach-dialog-footer{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px}
 html[data-theme="dark"] .coach-chat-bubble.user{color:#101010}
+
+
+/* Bloom Kito Coach full navigation page */
+.coach-full-page{width:100%;min-height:calc(100vh - 190px);display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow,0 12px 35px rgba(0,0,0,.06))}
+.coach-full-page .coach-dialog-head{flex:0 0 auto}
+.coach-full-page .coach-chat-messages{flex:1;min-height:420px;max-height:none;overflow:auto;padding:18px 4px}
+.coach-full-page .coach-compose{position:sticky;bottom:0;background:var(--card);padding-top:14px}
+.coach-full-page .coach-chat-bubble.user{background:var(--green);color:#fff;border-color:var(--green)}
+.coach-full-page .coach-chat-bubble.user span,.coach-full-page .coach-chat-bubble.user p{color:#fff}
+.coach-full-page .coach-chat-bubble.assistant{background:var(--soft);color:var(--ink);border-color:var(--line)}
+.coach-full-page .coach-chat-bubble.assistant span,.coach-full-page .coach-chat-bubble.assistant p{color:var(--ink)}
+.coach-full-page .coach-welcome{margin:12px 0}
+@media(max-width:760px){.coach-full-page{min-height:calc(100vh - 150px);padding:16px;border-radius:18px}.coach-full-page .coach-chat-messages{min-height:360px}}
