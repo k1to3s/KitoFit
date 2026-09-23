@@ -115,7 +115,7 @@ const food101Rows: [string, number, number, number, number][] = [
 ];
 
 const commonFoods: [string, number, number, number, number][] = [
-  ["Banana", 89, 1, 23, 0], ["Apple", 52, 0, 14, 0],
+  ["Banana", 89, 1, 23, 0], ["Apple", 52, 0, 14, 0], ["Orange", 47, 1, 12, 0], ["Grapes", 69, 1, 18, 0], ["Watermelon", 30, 1, 8, 0], ["Pineapple", 50, 1, 13, 0], ["Mango", 60, 1, 15, 0], ["Peach", 39, 1, 10, 0], ["Pear", 57, 0, 15, 0], ["Kiwi", 61, 1, 15, 0], ["Lemon", 29, 1, 9, 0], ["Lime", 30, 1, 11, 0], ["Cherry", 63, 1, 16, 0], ["Papaya", 43, 0, 11, 0], ["Pomegranate", 83, 2, 19, 1], ["Cantaloupe", 34, 1, 8, 0], ["Honeydew", 36, 1, 9, 0], ["Raspberries", 52, 1, 12, 1], ["Blackberries", 43, 1, 10, 0],
   ["Egg", 155, 13, 1, 11], ["Oatmeal, cooked", 71, 3, 12, 2],
   ["Greek yogurt, plain", 73, 10, 4, 2], ["Chicken breast, cooked", 165, 31, 0, 4],
   ["Brown rice, cooked", 112, 3, 23, 1], ["White rice, cooked", 130, 3, 28, 0],
@@ -139,7 +139,29 @@ export const FOOD_CATALOG: CatalogFood[] = [
 
 export function findFoodByLabel(label: string): CatalogFood | undefined {
   const id = label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  return FOOD_CATALOG.find((item) => item.id === id);
+  const aliases: Record<string,string> = {
+    granny_smith: "apple",
+    banana: "banana",
+    orange: "orange",
+    pineapple: "pineapple",
+    strawberry: "strawberries",
+    raspberry: "raspberries",
+    blackberry: "blackberries",
+    grapes: "grapes",
+    watermelon: "watermelon",
+    mango: "mango",
+    peach: "peach",
+    pear: "pear",
+    kiwi: "kiwi",
+    lemon: "lemon",
+    lime: "lime",
+    cherry: "cherry",
+    papaya: "papaya",
+    pomegranate: "pomegranate",
+    cantaloupe: "cantaloupe",
+    honeydew: "honeydew",
+  };
+  return FOOD_CATALOG.find((item) => item.id === (aliases[id] || id));
 }
 
 export function searchFoods(query: string): CatalogFood[] {
