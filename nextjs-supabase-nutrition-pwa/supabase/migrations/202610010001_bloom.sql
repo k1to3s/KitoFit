@@ -15,7 +15,7 @@ do $$ declare t text; begin
  execute format('create table public.%I (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,date text not null,data jsonb not null check(jsonb_typeof(data)=''object''),created_at timestamptz not null default now())',t);
  end loop;
 end $$;
-create unique index profiles_one_per_user on public.profiles(user_id);
+create unique index profiles_one_per_user on public.profiles(user_id);\ncreate unique index profiles_username_ci on public.profiles(lower(data->>'username')) where data ? 'username';
 create table public.foods_cache(key text primary key,data jsonb not null,expires_at timestamptz not null);
 create table public.rate_limits(key text primary key,count integer not null default 1,expires_at timestamptz not null);
 create index rate_limits_expiry on public.rate_limits(expires_at);
@@ -25,7 +25,7 @@ create table public.chat_members(room_id uuid not null references public.chat_ro
 create index chat_members_user on public.chat_members(user_id,room_id);
 create table public.messages(id uuid primary key default gen_random_uuid(),room_id uuid not null references public.chat_rooms(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,content text not null check(length(trim(content)) between 1 and 2000),created_at timestamptz not null default now());
 create index messages_room_time on public.messages(room_id,created_at);
-create table public.blocks(user_id uuid not null references auth.users(id) on delete cascade,blocked_id uuid not null references auth.users(id) on delete cascade,primary key(user_id,blocked_id),check(user_id<>blocked_id));
+create table public.blocks(user_id uuid not null references auth.users(id) on delete cascade,blocked_id uuid not null references auth.users(id) on delete cascade,primary key(user_id,blocked_id),check(user_id<>blocked_id));\ncreate index blocks_blocked_id_idx on public.blocks(blocked_id);\ncreate index chat_rooms_user_id_idx on public.chat_rooms(user_id);\ncreate index messages_user_id_idx on public.messages(user_id);
 -- SECURITY DEFINER avoids recursive RLS on membership. No caller-controlled user ID.
 create function public.is_room_member(room uuid) returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.chat_members where room_id=room and user_id=(select auth.uid())); $$;
 create function public.is_room_owner(room uuid) returns boolean language sql stable security definer set search_path='' as $$ select exists(select 1 from public.chat_rooms where id=room and user_id=(select auth.uid())); $$;
