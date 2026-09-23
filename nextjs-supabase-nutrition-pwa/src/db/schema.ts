@@ -1,13 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  jsonb,
-  timestamp,
-  integer,
-  primaryKey,
-  real,
-} from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, jsonb, timestamp, integer, primaryKey, real, boolean } from 'drizzle-orm/pg-core';
 
 export const foodLogs = pgTable('food_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -119,3 +110,7 @@ export const blocks = pgTable(
 );
 
 export const reports = entity('reports');
+
+export const communityPosts=pgTable('community_posts',{id:uuid('id').primaryKey().defaultRandom(),author:text('author').notNull(),authorId:text('author_id').notNull(),category:text('category').notNull(),title:text('title').notNull(),body:text('body').notNull(),imageData:text('image_data'),isOfficial:boolean('is_official').notNull().default(false),createdAt:timestamp('created_at',{withTimezone:true}).notNull().defaultNow()});
+export const communityComments=pgTable('community_comments',{id:uuid('id').primaryKey().defaultRandom(),postId:uuid('post_id').notNull().references(()=>communityPosts.id,{onDelete:'cascade'}),author:text('author').notNull(),authorId:text('author_id').notNull(),body:text('body').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull().defaultNow()});
+export const communityLikes=pgTable('community_likes',{postId:uuid('post_id').notNull().references(()=>communityPosts.id,{onDelete:'cascade'}),browserId:text('browser_id').notNull(),createdAt:timestamp('created_at',{withTimezone:true}).notNull().defaultNow()},t=>[primaryKey({columns:[t.postId,t.browserId]})]);
