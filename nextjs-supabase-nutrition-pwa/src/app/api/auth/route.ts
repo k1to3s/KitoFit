@@ -8,10 +8,21 @@ export async function POST(req:Request){
   try{
     checkOrigin(req);
     const input=await body(req,z.object({
-      action:z.enum(['login','signup','reset','resend']),
-      email:z.string().email().max(254),
+      action:z.enum(['login','signup','reset','resend','logout']),
+      email:z.string().email().max(254).optional(),
       password:z.string().min(8).max(128).optional()
     }).strict());
+    if(input.action==='logout'){
+      const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if(url&&key){
+        const cookieStore=await cookies();
+        const client=createServerClient(url,key,{cookies:{getAll(){return cookieStore.getAll();},setAll(cookiesToSet){cookiesToSet.forEach(({name,value,options})=>cookieStore.set(name,value,options));}}});
+        await client.auth.signOut();
+      }
+      return json({ok:true});
+    }
+    if(!input.email)throw new ApiError(400,'An email address is required.');
     const ip=req.headers.get('x-vercel-forwarded-for')||req.headers.get('x-forwarded-for')?.split(',')[0]||'local';
     await limit(`auth-ip:${createHash('sha256').update(ip).digest('hex')}`,10,300);
     await limit(`auth-email:${createHash('sha256').update(input.email.toLowerCase()).digest('hex')}`,5,300);
