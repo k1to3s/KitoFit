@@ -69,25 +69,27 @@ export async function proxy(req: NextRequest) {
     : NextResponse.next({ request: { headers } });
 
   if (supabaseUrl && supabaseKey) {
-    const cookieStore = {
-      getAll() {
-        return req.cookies.getAll();
-      },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          req.cookies.set(name, value);
-        });
-        response.cookies.set(cookiesToSet);
-      },
-    };
-
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
-      cookies: cookieStore,
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
     });
 
     const { data } = await supabase.auth.getClaims();
 
-    if (!isPublicPath(req.nextUrl.pathname) && !req.nextUrl.pathname.startsWith('/api/') && !data?.claims) {
+    if (
+      !isPublicPath(req.nextUrl.pathname) &&
+      !req.nextUrl.pathname.startsWith('/api/') &&
+      !data?.claims
+    ) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = '/login';
       loginUrl.searchParams.set('next', req.nextUrl.pathname);
