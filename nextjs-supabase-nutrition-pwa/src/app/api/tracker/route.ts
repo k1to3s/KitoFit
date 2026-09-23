@@ -9,7 +9,7 @@ const targets=z.object({calories:z.number().min(500).max(10000),protein:z.number
 const set=z.object({exercise:z.string().trim().min(1).max(100),sets:z.number().int().min(1).max(50),reps:z.number().int().min(1).max(1000),weight:z.number().min(0).max(1000),rpe:z.number().min(1).max(10)});
 const entitySchema=z.discriminatedUnion('resource',[
  z.object({resource:z.literal('water'),data:z.object({amount:z.number().int().min(0).max(15000)})}),
- z.object({resource:z.literal('supplement'),data:z.object({name:z.string().trim().min(1).max(100),dose:z.string().trim().min(1).max(80),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),notes:z.string().max(500).default('')})}),
+ z.object({resource:z.literal('supplement'),data:z.object({name:z.string().trim().min(1).max(100),dose:z.string().trim().min(1).max(80),time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),notes:z.string().max(500).default(''),timezone:z.string().min(1).max(80).optional()})}),
  z.object({resource:z.literal('supplementLog'),data:z.object({supplementId:z.string().uuid(),name:z.string().max(100),dose:z.string().max(80),time:z.string().max(40),notes:z.string().max(500).default('')})}),
  z.object({resource:z.literal('workout'),data:z.object({name:z.string().trim().min(1).max(100),duration:z.number().min(1).max(600),exercises:z.array(set).min(1).max(50),notes:z.string().max(1000).default('')})}),
  z.object({resource:z.literal('template'),data:z.object({name:z.string().trim().min(1).max(100),exercises:z.array(set).min(1).max(50)})}),
