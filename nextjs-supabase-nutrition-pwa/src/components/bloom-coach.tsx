@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, LoaderCircle, Send, Sparkles, Trash2, X } from 'lucide-react';
-import { Data } from './dashboard';
+import type { Data } from './dashboard';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
