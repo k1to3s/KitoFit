@@ -271,3 +271,7 @@ html[data-theme="dark"] .check-button.checked{background:#34412f;border-color:#4
 html[data-theme="dark"] .theme-icon-button{background:#242426;border-color:#48484a;color:#f5f5f7}
 html[data-theme="dark"] .settings-theme{border-color:#38383a}
 html[data-theme="dark"] .toast{background:#1c1c1e;color:#f5f5f7;border-color:#48484a}
+
+/* Local Bloom Coach */
+.coach-card{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin-bottom:18px;padding:20px 22px}.coach-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--soft);color:var(--green)}.coach-copy{min-width:0}.coach-label{display:block;font-size:10px;letter-spacing:.11em;font-weight:700;color:var(--muted);margin-bottom:5px}.coach-copy h2{margin:0 0 4px;font-size:18px}.coach-copy p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}.coach-card .button{white-space:nowrap}@media(max-width:700px){.coach-card{grid-template-columns:auto 1fr}.coach-card .button{grid-column:2;justify-self:start}.coach-copy p{font-size:12px}}
+html[data-theme="dark"] .coach-card{background:#1c1c1e;border-color:#38383a}.coach-card .coach-label{color:var(--muted)}
