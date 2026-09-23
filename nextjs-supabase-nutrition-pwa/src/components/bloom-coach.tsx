@@ -84,6 +84,29 @@ export function BloomCoachDialog({ data, close, fullPage = false }: { data: Data
     return () => { worker.terminate(); workerRef.current = null; };
   }, []);
 
+  function addAssistantMessage(content: string) {
+    setMessages(prev => {
+      const next = [...prev, { role: 'assistant' as const, content }];
+      localStorage.setItem('bloom-kito-coach-chat', JSON.stringify(next.slice(-20)));
+      return next;
+    });
+  }
+
+  function todaySummary() {
+    const t = context.today;
+    const target = context.targets;
+    const parts = [
+      `Today you have logged ${t.calories} kcal out of ${Math.round(target.calories)} kcal.`,
+      `Protein is ${t.protein}g out of ${Math.round(target.protein)}g.`,
+      `Carbs are ${t.carbs}g out of ${Math.round(target.carbs)}g.`,
+      `Fat is ${t.fat}g out of ${Math.round(target.fat)}g.`,
+      `Water is ${Math.round(context.water)} ml out of ${Math.round(target.water)} ml.`,
+    ];
+    const workout = context.recentWorkouts.find(w => w.date === new Date().toISOString().slice(0, 10));
+    parts.push(workout ? `You logged a ${workout.name} workout today.` : 'I do not see a workout logged today.');
+    return parts.join(' ');
+  }
+
   async function send(message = input) {
     const text = message.trim();
     if (!text || busy) return;
@@ -92,17 +115,25 @@ export function BloomCoachDialog({ data, close, fullPage = false }: { data: Data
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
     setInput('');
+
+    const normalized = text.toLowerCase().replace(/[?!.]/g, '').trim();
+    if (/^(how am i doing today|how am i doing|how am i doing today)$/.test(normalized)) {
+      addAssistantMessage(todaySummary());
+      return;
+    }
+
     setBusy(true);
     requestRef.current = crypto.randomUUID();
     const system = [
       'You are Bloom Kito Coach, a warm, practical wellness coach inside the Bloom KitoFit app.',
       'You run locally on the user device. Be concise, friendly, non-judgmental, practical, and answer in plain US English only.',
       'Never output Chinese, Japanese, Korean, emojis, or other non-ASCII writing. Never switch languages.',
-      'Use the Bloom data below when relevant. Never invent foods, workouts, targets, or measurements.',
+      'Use the Bloom data below when relevant. Never invent foods, workouts, targets, measurements, feelings, or personal experiences. You are not a person and must never claim that you personally exercised, ate, drank water, or followed a diet.',
+
       'Do not diagnose illness, prescribe medication, or give dangerous weight-loss advice. For medical concerns, recommend a qualified professional.',
       'Nutrition numbers are tracking estimates, not medical prescriptions.',
       'If the user asks what to eat next, give at most 3 simple food choices with approximate portions and a one-line reason. Do not invent a detailed recipe, ingredient list, or cooking instructions unless the user explicitly asks for a recipe.',
-      'Do not write long generic nutrition lectures. Prefer Bloom-specific numbers and choices from the supplied data. If the data is insufficient, say so briefly rather than making up facts.',
+      'Do not write long generic nutrition lectures. Prefer Bloom-specific numbers and choices from the supplied data. If the user asks how they are doing today, report the supplied today totals and targets exactly; do not estimate or substitute generic example numbers. If the data is insufficient, say so briefly rather than making up facts.',
       'If the user asks about workouts, use their recent workouts and avoid pretending you know exercises that are not in the data.',
       'Bloom data: ' + JSON.stringify(context),
     ].join('\\n');
