@@ -119,3 +119,13 @@ export const blocks = pgTable(
 );
 
 export const reports = entity('reports');
+export const foodAiCorrections = pgTable('food_ai_corrections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  predictedLabel: text('predicted_label').notNull(),
+  correctedLabel: text('corrected_label').notNull(),
+  correctionCount: integer('correction_count').notNull().default(1),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
