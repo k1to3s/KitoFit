@@ -114,3 +114,6 @@ html[data-theme="dark"] .toast{background:#111;color:#fff;border-color:#444}
 html[data-theme="dark"] .source-note a,
 html[data-theme="dark"] .text-button,
 html[data-theme="dark"] .card-bottom-link{color:#fff}
+
+/* Keep the interface cleaner by removing decorative subheaders. */
+.eyebrow,.workspace-label{display:none}
