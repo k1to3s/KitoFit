@@ -12,6 +12,7 @@
     "@axe-core/playwright": "^4.13.0",
     "@huggingface/inference": "^4.13.28",
     "@playwright/test": "^1.63.0",
+    "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.116.0",
     "@types/web-push": "^3.6.4",
     "baseline-browser-mapping": "^2.11.21",
