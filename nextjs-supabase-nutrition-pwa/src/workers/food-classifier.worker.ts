@@ -43,9 +43,10 @@ self.onmessage = async (event: MessageEvent<ClassifyMessage>) => {
     const classifier = await modelPromise;
     self.postMessage({ type: "analyzing", requestId });
     const pixels = await RawImage.read(image);
+    const fruitClassifier = await (fruitModelPromise ??= loadFruitModel());
     const [predictions, fruitPredictions] = await Promise.all([
       classifier(pixels, { top_k: 5 }),
-      (fruitModelPromise ??= loadFruitModel())(pixels, { top_k: 5 }),
+      fruitClassifier(pixels, { top_k: 5 }),
     ]);
     const fruit = (fruitPredictions as {label:string;score:number}[])
       .filter((p) => FRUIT_LABELS.has(p.label.toLowerCase()))
