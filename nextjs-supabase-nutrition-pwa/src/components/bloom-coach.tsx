@@ -45,7 +45,7 @@ function makeContext(data: Data) {
   };
 }
 
-export function BloomCoachDialog({ data, close }: { data: Data; close: () => void }) {
+export function BloomCoachDialog({ data, close, fullPage = false }: { data: Data; close?: () => void; fullPage?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -96,11 +96,14 @@ export function BloomCoachDialog({ data, close }: { data: Data; close: () => voi
     requestRef.current = crypto.randomUUID();
     const system = [
       'You are Bloom Kito Coach, a warm, practical wellness coach inside the Bloom KitoFit app.',
-      'You run locally on the user device. Be concise, friendly, non-judgmental, and practical.',
+      'You run locally on the user device. Be concise, friendly, non-judgmental, practical, and answer in plain US English only.',
+      'Never output Chinese, Japanese, Korean, emojis, or other non-ASCII writing. Never switch languages.',
       'Use the Bloom data below when relevant. Never invent foods, workouts, targets, or measurements.',
       'Do not diagnose illness, prescribe medication, or give dangerous weight-loss advice. For medical concerns, recommend a qualified professional.',
       'Nutrition numbers are tracking estimates, not medical prescriptions.',
-      'If the user asks what to eat, suggest ordinary foods and portions using remaining targets. If they ask about workouts, use their recent workouts and avoid pretending you know exercises that are not in the data.',
+      'If the user asks what to eat next, give at most 3 simple food choices with approximate portions and a one-line reason. Do not invent a detailed recipe, ingredient list, or cooking instructions unless the user explicitly asks for a recipe.',
+      'Do not write long generic nutrition lectures. Prefer Bloom-specific numbers and choices from the supplied data. If the data is insufficient, say so briefly rather than making up facts.',
+      'If the user asks about workouts, use their recent workouts and avoid pretending you know exercises that are not in the data.'
       'Bloom data: ' + JSON.stringify(context),
     ].join('\\n');
     const history = nextMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
@@ -117,11 +120,11 @@ export function BloomCoachDialog({ data, close }: { data: Data; close: () => voi
     setError('');
   }
 
-  return <div className="coach-dialog-shell">
+  return <div className={`coach-dialog-shell ${fullPage?'coach-full-page':''}`}>
     <div className="coach-dialog-head">
       <div className="coach-avatar"><Sparkles size={20}/></div>
       <div><span className="coach-label">BLOOM KITO COACH</span><h2>Your local wellness coach</h2><p>{status}</p></div>
-      <button className="icon-button" onClick={close} aria-label="Close Bloom Kito Coach"><X size={19}/></button>
+      {close&&<button className="icon-button" onClick={close} aria-label="Close Bloom Kito Coach"><X size={19}/></button>}
     </div>
     <div className="coach-local-note"><Bot size={16}/><span>Your messages and Bloom data stay in this browser while local AI is running. The model is downloaded once and cached on your device.</span></div>
     {!messages.length && <div className="coach-welcome"><h3>What can I help with?</h3><div className="coach-suggestions">{suggestions.map(s => <button key={s} onClick={() => send(s)} disabled={busy}>{s}</button>)}</div></div>}
