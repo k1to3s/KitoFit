@@ -12,8 +12,9 @@ export function json(data: unknown, status = 200) { return NextResponse.json(dat
 export function failure(error: unknown) { if(error instanceof z.ZodError) return json({error:{code:'INVALID_REQUEST',message:'Please check the supplied fields.'}},400); if(error instanceof ApiError) return json({error:{code:`REQUEST_${error.status}`,message:error.message}},error.status); console.error('Request failed', error instanceof Error ? error.name : 'UnknownError'); return json({error:{code:'INTERNAL_ERROR',message:'Something went wrong. Please try again.'}},500); }
 export function checkOrigin(req: Request) {
  const origin=req.headers.get('origin');
- const app=process.env.NEXT_PUBLIC_APP_URL;
- const allowed = [app, process.env.E2B_SANDBOX_ID ? `https://3000-${process.env.E2B_SANDBOX_ID}.e2b.app` : null, process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null, ...(process.env.VERCEL ? [] : [new URL(req.url).origin, 'http://localhost:3000'])].filter(Boolean);
+ const normalizeOrigin=(value?:string|null)=>{if(!value)return null;try{return new URL(value).origin;}catch{return value.replace(/\/$/,'');}};
+ const app=normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL);
+ const allowed = [app, normalizeOrigin(process.env.E2B_SANDBOX_ID ? `https://3000-${process.env.E2B_SANDBOX_ID}.e2b.app` : null), normalizeOrigin(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null), ...(process.env.VERCEL ? [] : [new URL(req.url).origin, 'http://localhost:3000'])].filter(Boolean);
  if(origin && !allowed.includes(origin)) throw new ApiError(403,'Origin not allowed.');
  if(!['GET','HEAD','OPTIONS'].includes(req.method) && req.headers.get('x-requested-with') !== 'bloom' ) throw new ApiError(403,'Request verification failed.');
 }
