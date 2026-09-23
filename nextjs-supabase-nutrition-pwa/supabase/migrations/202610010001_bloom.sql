@@ -86,3 +86,24 @@ create policy meal_photo_delete on storage.objects for delete to authenticated u
 -- Realtime obeys message SELECT RLS; clients still fetch their authorized history on events.
 alter publication supabase_realtime add table public.messages;
 commit;
+
+-- Personalized Food 101 corrections. Images stay local; only labels/counts are stored.
+create table if not exists public.food_ai_corrections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  predicted_label text not null,
+  corrected_label text not null,
+  correction_count integer not null default 1,
+  last_used_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique(user_id, predicted_label, corrected_label)
+);
+alter table public.food_ai_corrections enable row level security;
+drop policy if exists food_ai_corrections_select_own on public.food_ai_corrections;
+create policy food_ai_corrections_select_own on public.food_ai_corrections for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists food_ai_corrections_insert_own on public.food_ai_corrections;
+create policy food_ai_corrections_insert_own on public.food_ai_corrections for insert to authenticated with check ((select auth.uid()) = user_id);
+drop policy if exists food_ai_corrections_update_own on public.food_ai_corrections;
+create policy food_ai_corrections_update_own on public.food_ai_corrections for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create index if not exists food_ai_corrections_user_idx on public.food_ai_corrections(user_id);
+create index if not exists food_ai_corrections_predicted_idx on public.food_ai_corrections(user_id,predicted_label);
