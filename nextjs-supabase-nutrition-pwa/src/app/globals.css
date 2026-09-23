@@ -22,3 +22,95 @@ html[data-theme="dark"] button{color:#fff}
 html[data-theme="dark"] .field span,html[data-theme="dark"] .muted,html[data-theme="dark"] .page-heading p,html[data-theme="dark"] .daily-banner p,html[data-theme="dark"] .source-note,html[data-theme="dark"] .modal-intro,html[data-theme="dark"] .settings-action small,html[data-theme="dark"] .account-summary p,html[data-theme="dark"] .chat-message small{color:#aaa}
 .theme-icon-button{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--ink);cursor:pointer;transition:transform .15s ease,background .15s ease}.theme-icon-button:hover{transform:scale(1.04)}.settings-theme{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:5px}.settings-theme strong,.settings-theme small{display:block}.settings-theme small{margin-top:4px;color:#697465;font-size:10px}.circle-actions{display:flex;gap:14px;align-items:center}.circle-confirm{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.circle-confirm>span{flex:1;min-width:180px}
 
+
+/* Dark mode readability: keep every surface and native picker on the same true black/white palette. */
+html[data-theme="dark"] .date-control,
+html[data-theme="dark"] .meal-heading,
+html[data-theme="dark"] .diary-bottom,
+html[data-theme="dark"] .count-badge,
+html[data-theme="dark"] .meal-heading .mini,
+html[data-theme="dark"] .food-thumb,
+html[data-theme="dark"] .empty-meal,
+html[data-theme="dark"] .water-percent,
+html[data-theme="dark"] .water-add,
+html[data-theme="dark"] .workout-tags>span,
+html[data-theme="dark"] .workout-start,
+html[data-theme="dark"] .pill-badge,
+html[data-theme="dark"] .card-bottom-link,
+html[data-theme="dark"] .info-note,
+html[data-theme="dark"] .feature-icon,
+html[data-theme="dark"] .success-note,
+html[data-theme="dark"] .delete-confirm,
+html[data-theme="dark"] .dialog-tabs>button,
+html[data-theme="dark"] .tone-0,
+html[data-theme="dark"] .tone-1,
+html[data-theme="dark"] .tone-2,
+html[data-theme="dark"] .check-button,
+html[data-theme="dark"] .water-glasses .glass-water,
+html[data-theme="dark"] .progress-track,
+html[data-theme="dark"] .ring-track{background:#000;color:#fff;border-color:#333}
+html[data-theme="dark"] .quick-icon,
+html[data-theme="dark"] .banner-symbol,
+html[data-theme="dark"] .avatar,
+html[data-theme="dark"] .settings-action,
+html[data-theme="dark"] .search-result,
+html[data-theme="dark"] .upload-zone{background:#111;color:#fff;border-color:#333}
+html[data-theme="dark"] .food-row,
+html[data-theme="dark"] .supplement-row,
+html[data-theme="dark"] .meal-heading,
+html[data-theme="dark"] .nutrition-note,
+html[data-theme="dark"] .profile-divider,
+html[data-theme="dark"] .topbar-divider{border-color:#2a2a2a}
+html[data-theme="dark"] .date-control,
+html[data-theme="dark"] .date-control input,
+html[data-theme="dark"] input[type="date"],
+html[data-theme="dark"] input[type="time"]{color-scheme:dark}
+html[data-theme="dark"] .date-control input::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1)}
+html[data-theme="dark"] .date-control>button,
+html[data-theme="dark"] .date-control label,
+html[data-theme="dark"] .date-control svg,
+html[data-theme="dark"] .section-heading,
+html[data-theme="dark"] .meal-heading h3,
+html[data-theme="dark"] .meal-heading>div>span:not(.meal-cal),
+html[data-theme="dark"] .meal-cal,
+html[data-theme="dark"] .food-info strong,
+html[data-theme="dark"] .food-macros>span,
+html[data-theme="dark"] .food-kcal,
+html[data-theme="dark"] .water-stat strong,
+html[data-theme="dark"] .workout-preview h3,
+html[data-theme="dark"] .supp-info strong,
+html[data-theme="dark"] .settings-action strong,
+html[data-theme="dark"] .dialog-tabs>button,
+html[data-theme="dark"] .modal-heading h2{color:#fff}
+html[data-theme="dark"] .date-control input{background:transparent}
+html[data-theme="dark"] .ring-label>span,
+html[data-theme="dark"] .calorie-stats>div>span,
+html[data-theme="dark"] .macro-label small,
+html[data-theme="dark"] .macro-remaining,
+html[data-theme="dark"] .food-info>span,
+html[data-theme="dark"] .food-macros small,
+html[data-theme="dark"] .food-kcal small,
+html[data-theme="dark"] .workout-preview p,
+html[data-theme="dark"] .supp-info>span,
+html[data-theme="dark"] .water-caption,
+html[data-theme="dark"] .meal-cal small,
+html[data-theme="dark"] .empty-state,
+html[data-theme="dark"] .empty-state p,
+html[data-theme="dark"] .field-help{color:#aaa}
+html[data-theme="dark"] .eyebrow,
+html[data-theme="dark"] .workspace-label{color:#fff}
+html[data-theme="dark"] .nav-item{color:#ddd}
+html[data-theme="dark"] .nav-item:hover,
+html[data-theme="dark"] .nav-item.active{background:#222;color:#fff}
+html[data-theme="dark"] .button.outline{background:#000;color:#fff;border-color:#444}
+html[data-theme="dark"] .button.outline:hover,
+html[data-theme="dark"] .icon-button:hover,
+html[data-theme="dark"] .nav-item:hover{background:#222}
+html[data-theme="dark"] .daily-banner{background:#111}
+html[data-theme="dark"] .quick-log{background:#111}
+html[data-theme="dark"] .toast{background:#111;color:#fff;border-color:#444}
+html[data-theme="dark"] .source-note a,
+html[data-theme="dark"] .text-button,
+html[data-theme="dark"] .card-bottom-link{color:#fff}
