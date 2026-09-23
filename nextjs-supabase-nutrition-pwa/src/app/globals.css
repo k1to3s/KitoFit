@@ -310,3 +310,8 @@ html[data-theme="dark"] .coach-chat-bubble.user{color:#101010}
 .coach-full-page .coach-chat-bubble.assistant span,.coach-full-page .coach-chat-bubble.assistant p{color:var(--ink)}
 .coach-full-page .coach-welcome{margin:12px 0}
 @media(max-width:760px){.coach-full-page{min-height:calc(100vh - 150px);padding:16px;border-radius:18px}.coach-full-page .coach-chat-messages{min-height:360px}}
+
+.discord-community{display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:650;color:var(--ink);padding:7px 10px;border-radius:999px;background:var(--soft);border:1px solid var(--line);transition:transform .15s ease,background .15s ease}
+.discord-community:hover{transform:translateY(-1px);background:var(--card)}
+.discord-community svg{width:16px;height:16px;fill:currentColor;flex:0 0 auto}
+@media(max-width:760px){.discord-community span{display:none}.discord-community{padding:8px}}
