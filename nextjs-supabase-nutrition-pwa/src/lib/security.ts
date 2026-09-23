@@ -26,19 +26,19 @@ export async function limit(key:string,max=60,seconds=60) {
 }
 export function serverSupabase(token?:string,admin=false){
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;const key=admin?process.env.SUPABASE_SERVICE_ROLE_KEY:process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
- if(!url||!key)throw new ApiError(503,'This feature needs a connected Supabase account. Your demo diary is still available.');
+ if(!url||!key)throw new ApiError(503,'This feature needs a connected Supabase account.');
  return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false},global:token?{headers:{Authorization:`Bearer ${token}`}}:undefined});
 }
-export async function identity(req:Request,realOnly=false){
+export async function identity(req:Request,realOnly=true){
  checkOrigin(req);
  const header=z.string().max(8192).optional().parse(req.headers.get('authorization')||undefined);
- if(header){const token=header.replace(/^Bearer /,''); const client=serverSupabase(token);const {data,error}=await client.auth.getUser(token);if(error||!data.user)throw new ApiError(401,'Please sign in again.');if(!data.user.email_confirmed_at)throw new ApiError(403,'Please verify your email first.');return {id:data.user.id,token,demo:false};}
- if(realOnly||process.env.NEXT_PUBLIC_SUPABASE_URL)throw new ApiError(401,'Please sign in to continue.');
- const jar=await cookies();const supplied=req.headers.get('x-demo-session');let secret=supplied?z.string().regex(/^[a-f0-9]{64}$/).parse(supplied):jar.get('bloom_demo')?.value;
- if(!secret||!/^[a-f0-9]{64}$/.test(secret))secret=randomBytes(32).toString('hex');
- if(jar.get('bloom_demo')?.value!==secret)jar.set('bloom_demo',secret,{httpOnly:true,secure:new URL(req.url).protocol==='https:',sameSite:'strict',path:'/',maxAge:604800});
- const hash=createHash('sha256').update(secret).digest('hex');const id=`${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
- return {id,token:undefined,demo:true};
+ if(!header)throw new ApiError(401,'Please sign in to continue.');
+ const token=header.replace(/^Bearer /,'');
+ const client=serverSupabase(token);
+ const {data,error}=await client.auth.getUser(token);
+ if(error||!data.user)throw new ApiError(401,'Please sign in again.');
+ if(!data.user.email_confirmed_at)throw new ApiError(403,'Please verify your email first.');
+ return {id:data.user.id,token,demo:false};
 }
 export async function audit(userId:string,action:string){await db.insert(auditLogs).values({userId,date:new Date().toISOString().slice(0,10),data:{action}});}
 export const dateSchema=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!isNaN(Date.parse(v))&&new Date(v).toISOString().slice(0,10)===v);
