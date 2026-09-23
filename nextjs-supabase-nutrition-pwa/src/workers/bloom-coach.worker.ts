@@ -1,5 +1,3 @@
-import { CreateMLCEngine } from "@mlc-ai/web-llm";
-
 const MODEL_ID = "Qwen2-0.5B-Instruct-q4f16_1-MLC";
 
 type CoachMessage = {
@@ -13,13 +11,14 @@ type RequestMessage = {
   messages: CoachMessage[];
 };
 
-let enginePromise: ReturnType<typeof CreateMLCEngine> | null = null;
+let enginePromise: Promise<any> | null = null;
+type MLCEngineProgress = { text?: string; progress?: number };
 
 async function getEngine(requestId: string) {
   if (!enginePromise) {
     if (!("gpu" in navigator)) throw new Error("WebGPU is not available on this device.");
-    enginePromise = CreateMLCEngine(MODEL_ID, {
-      initProgressCallback: (progress) => {
+    enginePromise = import('@mlc-ai/web-llm').then(({ CreateMLCEngine }) => CreateMLCEngine(MODEL_ID, {
+      initProgressCallback: (progress: MLCEngineProgress) => {
         self.postMessage({
           type: "progress",
           requestId,
@@ -27,7 +26,7 @@ async function getEngine(requestId: string) {
           progress: typeof progress.progress === "number" ? Math.round(progress.progress * 100) : null,
         });
       },
-    }).catch((error: unknown) => {
+    })).catch((error: unknown) => {
       enginePromise = null;
       throw error;
     });
