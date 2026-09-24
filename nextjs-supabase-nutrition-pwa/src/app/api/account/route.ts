@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { eq,sql } from 'drizzle-orm';
-import { cookies } from 'next/headers';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { identity,body,json,failure,limit,serverSupabase,ApiError } from '@/lib/security';
@@ -31,6 +30,6 @@ export async function DELETE(req:Request){try{
   while(true){if(Date.now()>deadline)throw new ApiError(503,'Some photos were removed. Please retry deletion to finish safely.');const {data:files,error}=await storage.list(user.id,{limit:100});if(error)throw new ApiError(503,'Could not delete photos. Please retry.');if(!files?.length)break;const deleted=await storage.remove(files.map(f=>`${user.id}/${f.name}`));if(deleted.error)throw new ApiError(503,'Could not delete photos. Please retry.');}
  }
  await db.transaction(async tx=>{for(const table of Object.values(owned))await tx.delete(table).where(eq(table.userId,user.id));await tx.delete(schema.messages).where(eq(schema.messages.userId,user.id));await tx.delete(schema.chatMembers).where(eq(schema.chatMembers.userId,user.id));await tx.delete(schema.chatRooms).where(eq(schema.chatRooms.userId,user.id));await tx.delete(schema.blocks).where(sql`${schema.blocks.userId}=${user.id} OR ${schema.blocks.blockedId}=${user.id}`);await tx.delete(schema.foodsCache).where(sql`${schema.foodsCache.key} LIKE ${`ai:${user.id}:%`}`);});
- {const {error}=await serverSupabase(undefined,true).auth.admin.deleteUser(user.id);if(error)throw new ApiError(503,'Your data was removed, but account deletion needs to be retried.');}else (await cookies()).delete('bloom_demo');
+ {const {error}=await serverSupabase(undefined,true).auth.admin.deleteUser(user.id);if(error)throw new ApiError(503,'Your data was removed, but account deletion needs to be retried.');}
  return json({ok:true});
 }catch(e){return failure(e);}}
