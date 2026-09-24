@@ -12,6 +12,11 @@ jobs:
     defaults:
       run:
         working-directory: nextjs-supabase-nutrition-pwa
+    env:
+      # The app uses DATABASE_URL at runtime, but the Next.js production build
+      # imports database-backed route modules during route analysis. CI only
+      # needs a syntactically valid URL; no database connection is made here.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
     steps:
       - uses: actions/checkout@v4
 
