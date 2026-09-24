@@ -6,4 +6,16 @@ export const initialFoods = [
  {name:'Flat white',meal:'Snacks',serving:'1 cup · 180 ml',grams:180,calories:120,protein:8,carbs:11,fat:5,image:null}
 ];
 export const defaultTargets={calories:2200,protein:140,carbs:250,fat:70,water:2500};
+export const drinkLibrary=[
+ {name:'Water',calories:0,protein:0,carbs:0,fat:0,drinkType:'water'},
+ {name:'Coca-Cola Original',calories:42,protein:0,carbs:10.6,fat:0,drinkType:'soda'},
+ {name:'Diet Coke',calories:0,protein:0,carbs:0,fat:0,drinkType:'soda'},
+ {name:'Milk, 2%',calories:50,protein:3.3,carbs:4.8,fat:2,drinkType:'milk'},
+ {name:'Whole milk',calories:61,protein:3.2,carbs:4.8,fat:3.3,drinkType:'milk'},
+ {name:'Orange juice',calories:45,protein:0.7,carbs:10.4,fat:0.2,drinkType:'juice'},
+ {name:'Apple juice',calories:46,protein:0.1,carbs:11.3,fat:0.1,drinkType:'juice'},
+ {name:'Coffee, black',calories:2,protein:0.3,carbs:0,fat:0,drinkType:'coffee'},
+ {name:'Sports drink',calories:24,protein:0,carbs:6,fat:0,drinkType:'sports'},
+ {name:'Energy drink',calories:45,protein:0,carbs:11,fat:0,drinkType:'energy'},
+];
 export const library=[{name:'Chicken breast, grilled',calories:165,protein:31,carbs:0,fat:3.6},{name:'Brown rice, cooked',calories:123,protein:2.7,carbs:25.6,fat:1},{name:'Avocado',calories:160,protein:2,carbs:8.5,fat:14.7},{name:'Greek yogurt, plain',calories:59,protein:10,carbs:3.6,fat:0.4},{name:'Banana',calories:89,protein:1.1,carbs:22.8,fat:0.3},{name:'Oats',calories:389,protein:16.9,carbs:66.3,fat:6.9},{name:'Salmon, cooked',calories:206,protein:22,carbs:0,fat:12},{name:'Egg, whole',calories:155,protein:13,carbs:1.1,fat:11}];
