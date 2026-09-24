@@ -315,3 +315,5 @@ html[data-theme="dark"] .coach-chat-bubble.user{color:#101010}
 .discord-community:hover{transform:translateY(-1px);background:var(--card)}
 .discord-community svg{width:16px;height:16px;fill:currentColor;flex:0 0 auto}
 @media(max-width:760px){.discord-community span{display:none}.discord-community{padding:8px}}
+
+.drink-size-options{display:grid;gap:8px;margin:12px 0}.drink-size-options>span{font-size:12px;font-weight:650;color:var(--muted)}.drink-size-options>div{display:flex;flex-wrap:wrap;gap:7px}.drink-size-options button{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:7px 11px;font:inherit;font-size:13px;cursor:pointer}.drink-size-options button.selected{border-color:var(--green);background:var(--green);color:#fff}
