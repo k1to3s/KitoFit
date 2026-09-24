@@ -83,43 +83,50 @@ try{
     }
   }catch{}
 
-  // Older Android fallback. A timeout prevents a failed decode from leaving
-  // the Razr stuck on "Reading the barcode…" indefinitely.
+  // Older Android fallback.
   try{
     const {default:Quagga}=await import('@ericblade/quagga2');
     const src=URL.createObjectURL(source);
     try{
       const value=await new Promise<string>((resolve,reject)=>{
-        let settled=false;
-        const succeed=(code:string)=>{
-          if(settled)return;
-          settled=true;
-          resolve(code);
-        };
-        const fail=(error:Error)=>{
-          if(settled)return;
-          settled=true;
-          reject(error);
-        };
-        const timer=window.setTimeout(()=>fail(new Error('No barcode found. Move closer, keep the barcode horizontal, or type the number below.')),8000);
+        const timer=window.setTimeout(()=>{
+          reject(new Error('No barcode found. Move closer, keep the barcode horizontal, or type the number below.'));
+        },8000);
+
         Quagga.decodeSingle({
           src,
           numOfWorkers:0,
           locate:true,
           inputStream:{size:1600},
-          decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','i2of5_reader']}
+          decoder:{
+            readers:[
+              'ean_reader',
+              'ean_8_reader',
+              'upc_reader',
+              'upc_e_reader',
+              'code_128_reader',
+              'i2of5_reader'
+            ]
+          }
         },(result:any)=>{
           window.clearTimeout(timer);
           const code=result?.codeResult?.code;
-          if(code)succeed(String(code));
-          else fail(new Error('No barcode found. Move closer, keep the barcode horizontal, or type the number below.'));
+          if(code){
+            resolve(String(code));
+          }else{
+            reject(new Error('No barcode found. Move closer, keep the barcode horizontal, or type the number below.'));
+          }
         });
       });
+
       setQuery(value);
       await search(undefined,value,true);
       return;
-    }finally{URL.revokeObjectURL(src);}
+    }finally{
+      URL.revokeObjectURL(src);
+    }
   }catch{}
+
 
   throw new Error('I couldn’t read that barcode. Try a clear photo of the full barcode, or type the number below.');
 }catch(e){
