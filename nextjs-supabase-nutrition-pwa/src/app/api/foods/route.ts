@@ -16,7 +16,7 @@ export async function GET(req:Request){try{const user=await identity(req);const 
        return json({foods:[{name:`${plu.organic?'Organic ':''}${food.name}`,calories:food.calories,protein:food.protein,carbs:food.carbs,fat:food.fat,source:'IFPS PLU',servingGrams:100}],note:`PLU ${q.q} matched ${plu.organic?'organic ':''}${food.name}. Nutrition is an approximate local reference value per 100 g; adjust the portion before saving.`});
      }
    }
-   if(/^\\d{4,5}$/.test(q.q)) return json({foods:[],note:'That looks like a produce PLU, but Bloom does not have that PLU mapped yet. You can still enter the food manually. PLUs are not product barcodes.'});
+   if(/^\d{4,5}$/.test(q.q)) return json({foods:[],note:'That looks like a produce PLU, but Bloom does not have that PLU mapped yet. You can still enter the food manually. PLUs are not product barcodes.'});
  }
  const local=barcode?[]:[...library,...drinkLibrary].filter(f=>{
    const name=f.name.toLowerCase();
