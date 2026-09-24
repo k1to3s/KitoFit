@@ -1,4 +1,4 @@
-const MODEL_ID = "Qwen2-0.5B-Instruct-q4f32_1-MLC";
+const MODEL_ID = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
 
 type CoachMessage = {
   role: "system" | "user" | "assistant";
