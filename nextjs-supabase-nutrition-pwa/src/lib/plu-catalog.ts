@@ -73,8 +73,8 @@ const PLU_TO_FOOD: Record<string, string> = Object.fromEntries(
 );
 
 export function normalizePlu(input: string): { code: string; organic: boolean } | null {
-  const digits = input.replace(/\\D/g, '');
-  if (!/^\\d{4,5}$/.test(digits)) return null;
+  const digits = input.replace(/\D/g, '');
+  if (!/^\d{4,5}$/.test(digits)) return null;
   if (digits.length === 5 && digits.startsWith('9')) {
     return { code: digits.slice(1), organic: true };
   }
