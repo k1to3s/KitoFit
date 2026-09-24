@@ -16,25 +16,113 @@ export function FoodDialog({date,meal:initialMeal,tab:initialTab,editing,history
  const selectNutrition=(food:Nutrition)=>{setSelected(food);setGrams(food.drinkType?(food.drinkType==='water'?250:240):(food.servingGrams||100));setNote(food.drinkType?'Choose a drink size below. Nutrition is shown per 100 ml; the amount you choose will be logged.':note);};const [meal,setMeal]=useState(initialMeal);const [favorites,setFavorites]=useState<string[]>([]);const [query,setQuery]=useState('');const [results,setResults]=useState<Nutrition[]>(library);const [selected,setSelected]=useState<Nutrition|null>(editing?{name:editing.name,calories:editing.calories/editing.grams*100,protein:editing.protein/editing.grams*100,carbs:editing.carbs/editing.grams*100,fat:editing.fat/editing.grams*100}:initialTab==='Manual'?blank:null);const [grams,setGrams]=useState(editing?.grams||100);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [note,setNote]=useState('');const [custom,setCustom]=useState(false);const [aiOriginalLabel,setAiOriginalLabel]=useState('');const [preview,setPreview]=useState('');const [confirmDelete,setConfirmDelete]=useState(false);
  useEffect(()=>{try{setFavorites(JSON.parse(localStorage.getItem('bloom-favorite-foods')||'[]'));}catch{}},[]);useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
  async function search(e?:FormEvent,value=query,barcode=false){e?.preventDefault();if(!value.trim())return;setBusy(true);setError('');try{const r=await api(`/api/foods?q=${encodeURIComponent(value)}&barcode=${barcode}`);setResults(r.foods);setNote(r.note);if(barcode&&r.foods.length){const first=r.foods[0] as Nutrition;selectNutrition(first);}else if(barcode){setTab('Manual');setSelected(blank);setNote(r.note);}}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function scan(file?:File){if(!file)return;setBusy(true);setError('');try{if(file.size>10*1024*1024)throw new Error('Please choose a barcode photo under 10 MB.');const BrowserBarcodeDetector=(window as unknown as {BarcodeDetector?:new(options?:{formats?:string[]})=>{detect:(source:ImageBitmap|HTMLImageElement|Blob)=>Promise<Array<{rawValue?:string}>>}}).BarcodeDetector;if(BrowserBarcodeDetector){try{const detector=new BrowserBarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});const codes=await detector.detect(file);const value=codes.find(x=>x.rawValue)?.rawValue;if(value){setQuery(value);await search(undefined,value,true);return;}}catch{}}try{
-const {readBarcodes,prepareZXingModule}=await import('zxing-wasm/reader');
-prepareZXingModule({overrides:{locateFile:(path:string,prefix:string)=>path.endsWith('.wasm')?'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/reader/'+path:prefix+path}});
-const codes=await readBarcodes(file,{tryHarder:true,formats:['EAN13','EAN8','UPCA','UPCE','DataBar','DataBarOmni','DataBarStk','DataBarLtd','DataBarExp','DataBarExpStk','Code128','ITF'],maxNumberOfSymbols:1});
-const value=codes[0]?.text;
-if(value){setQuery(value);await search(undefined,value,true);return;}
-}catch{}
-const {default:Quagga}=await import('@ericblade/quagga2');
-const src=URL.createObjectURL(file);
+ async function scan(file?:File){
+if(!file)return;
+setBusy(true);
+setError('');
+setNote('Reading the barcode…');
 try{
-const value=await new Promise<string>((resolve,reject)=>{
-  Quagga.decodeSingle({src,numOfWorkers:0,locate:true,decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','i2of5_reader']}},(result:any)=>{
-    const code=result?.codeResult?.code;
-    if(code)resolve(String(code)); else reject(new Error('No barcode found'));
-  });
-});
-setQuery(value);
-await search(undefined,value,true);
-}finally{URL.revokeObjectURL(src);}}catch(e){setError((e as Error).message);}finally{setBusy(false);}} async function estimate(file?:File){if(!file)return;setError('');if(!file.type.startsWith('image/')||file.size>15_000_000){setError('Please choose a JPG, PNG, or WebP under 15 MB.');return;}setPreview(URL.createObjectURL(file));setBusy(true);setNote('Loading Bloom food AI locally…');try{const u=URL.createObjectURL(file);const img=await new Promise<HTMLImageElement>((ok,no)=>{const i=document.createElement('img');i.onload=()=>ok(i);i.onerror=()=>no(new Error('This photo could not be opened.'));i.src=u});URL.revokeObjectURL(u);const c=document.createElement('canvas'),sc=Math.min(1,1024/Math.max(img.naturalWidth,img.naturalHeight));c.width=Math.max(1,img.naturalWidth*sc);c.height=Math.max(1,img.naturalHeight*sc);const x=c.getContext('2d');if(!x)throw new Error('Your browser could not prepare the photo.');x.drawImage(img,0,0,c.width,c.height);const blob=await new Promise<Blob>((ok,no)=>c.toBlob(v=>v?ok(v):no(new Error('Photo preparation failed.')),'image/jpeg',.9));const w=new Worker(new URL('../workers/food-classifier.worker.ts',import.meta.url),{type:'module'});await new Promise<void>((ok,no)=>{const t=setTimeout(()=>{w.terminate();no(new Error('The local food AI took too long to load. Please try again.'))},90000);w.onmessage=async(e)=>{const q=e.data;if(q.type==='loading')setNote('Loading Bloom food AI locally…');else if(q.type==='progress')setNote(`Downloading Bloom food AI… ${q.percent}%`);else if(q.type==='analyzing')setNote('Analyzing your food photo…');else if(q.type==='complete'){const ps=(q.predictions||[]) as {label:string;score:number}[];
+  if(file.size>10*1024*1024)throw new Error('Please choose a barcode photo under 10 MB.');
+
+  // Normalize camera images first. Some Android cameras return very large or
+  // unusual image formats that barcode decoders handle poorly.
+  let source:Blob=file;
+  try{
+    const bitmap=await createImageBitmap(file);
+    const max=1600;
+    const scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+    canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    const ctx=canvas.getContext('2d');
+    if(ctx){
+      ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+      const normalized=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));
+      if(normalized)source=normalized;
+    }
+    bitmap.close();
+  }catch{}
+
+  const BrowserBarcodeDetector=(window as unknown as {
+    BarcodeDetector?:new(options?:{formats?:string[]})=>{detect:(source:ImageBitmap|HTMLImageElement|Blob)=>Promise<Array<{rawValue?:string}>>}
+  }).BarcodeDetector;
+
+  if(BrowserBarcodeDetector){
+    try{
+      const detector=new BrowserBarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
+      const codes=await detector.detect(source);
+      const value=codes.find(x=>x.rawValue)?.rawValue;
+      if(value){
+        setQuery(value);
+        await search(undefined,value,true);
+        return;
+      }
+    }catch{}
+  }
+
+  // Primary fallback: ZXing. Keep its WASM local/bundled when possible and
+  // only use the CDN location as a fallback for browsers that need it.
+  try{
+    const {readBarcodes,prepareZXingModule}=await import('zxing-wasm/reader');
+    prepareZXingModule({
+      overrides:{
+        locateFile:(path:string,prefix:string)=>
+          path.endsWith('.wasm')?prefix+path:path
+      }
+    });
+    const codes=await readBarcodes(source,{
+      tryHarder:true,
+      formats:['EAN13','EAN8','UPCA','UPCE','DataBar','DataBarOmni','DataBarStk','DataBarLtd','DataBarExp','DataBarExpStk','Code128','ITF'],
+      maxNumberOfSymbols:1
+    });
+    const value=codes.find(x=>x.text)?.text;
+    if(value){
+      setQuery(value);
+      await search(undefined,value,true);
+      return;
+    }
+  }catch{}
+
+  // Older Android fallback. A timeout prevents a failed decode from leaving
+  // the Razr stuck on "Reading the barcode…" indefinitely.
+  try{
+    const {default:Quagga}=await import('@ericblade/quagga2');
+    const src=URL.createObjectURL(source);
+    try{
+      const value=await new Promise<string>((resolve,reject)=>{
+        let settled=false;
+        const finish=(fn:(value?:string)=>void,value?:string)=>{
+          if(settled)return;
+          settled=true;
+          fn(value);
+        };
+        const timer=window.setTimeout(()=>finish(reject,new Error('No barcode found. Move closer, keep the barcode horizontal, or type the number below.')),8000);
+        Quagga.decodeSingle({
+          src,
+          numOfWorkers:0,
+          locate:true,
+          inputStream:{size:1600},
+          decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','i2of5_reader']}
+        },(result:any)=>{
+          window.clearTimeout(timer);
+          const code=result?.codeResult?.code;
+          if(code)finish(resolve,String(code));
+          else finish(reject,new Error('No barcode found. Move closer, keep the barcode horizontal, or type the number below.'));
+        });
+      });
+      setQuery(value);
+      await search(undefined,value,true);
+      return;
+    }finally{URL.revokeObjectURL(src);}
+  }catch{}
+
+  throw new Error('I couldn’t read that barcode. Try a clear photo of the full barcode, or type the number below.');
+}catch(e){
+  setError((e as Error).message);
+}finally{
+  setBusy(false);
+}
+} async function estimate(file?:File){if(!file)return;setError('');if(!file.type.startsWith('image/')||file.size>15_000_000){setError('Please choose a JPG, PNG, or WebP under 15 MB.');return;}setPreview(URL.createObjectURL(file));setBusy(true);setNote('Loading Bloom food AI locally…');try{const u=URL.createObjectURL(file);const img=await new Promise<HTMLImageElement>((ok,no)=>{const i=document.createElement('img');i.onload=()=>ok(i);i.onerror=()=>no(new Error('This photo could not be opened.'));i.src=u});URL.revokeObjectURL(u);const c=document.createElement('canvas'),sc=Math.min(1,1024/Math.max(img.naturalWidth,img.naturalHeight));c.width=Math.max(1,img.naturalWidth*sc);c.height=Math.max(1,img.naturalHeight*sc);const x=c.getContext('2d');if(!x)throw new Error('Your browser could not prepare the photo.');x.drawImage(img,0,0,c.width,c.height);const blob=await new Promise<Blob>((ok,no)=>c.toBlob(v=>v?ok(v):no(new Error('Photo preparation failed.')),'image/jpeg',.9));const w=new Worker(new URL('../workers/food-classifier.worker.ts',import.meta.url),{type:'module'});await new Promise<void>((ok,no)=>{const t=setTimeout(()=>{w.terminate();no(new Error('The local food AI took too long to load. Please try again.'))},90000);w.onmessage=async(e)=>{const q=e.data;if(q.type==='loading')setNote('Loading Bloom food AI locally…');else if(q.type==='progress')setNote(`Downloading Bloom food AI… ${q.percent}%`);else if(q.type==='analyzing')setNote('Analyzing your food photo…');else if(q.type==='complete'){const ps=(q.predictions||[]) as {label:string;score:number}[];
 const fp=(q.fruitPredictions||[]) as {label:string;score:number}[];
 const fruitBest=fp[0]&&findFoodByLabel(fp[0].label);
 const foodBest=ps[0]&&findFoodByLabel(ps[0].label);
