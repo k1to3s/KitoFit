@@ -5,7 +5,19 @@ import { library,drinkLibrary } from '@/lib/demo';
 import { db } from '@/db';
 import { customFoods } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { lookupPlu } from '@/lib/plu-catalog';
+import { findFoodByLabel } from '@/lib/food-catalog';
 export async function GET(req:Request){try{const user=await identity(req);const q=z.object({q:z.string().trim().min(1).max(100),barcode:z.enum(['true','false']).optional()}).strict().parse(Object.fromEntries(new URL(req.url).searchParams));await limit(`foods:${user.id}`,15);const barcode=q.barcode==='true';if(barcode)z.string().regex(/^\d{4,14}$/).parse(q.q);const term=q.q.toLowerCase();const compactTerm=term.replace(/[^a-z0-9]+/g,'');
+ if(barcode){
+   const plu=lookupPlu(q.q);
+   if(plu){
+     const food=findFoodByLabel(plu.food);
+     if(food){
+       return json({foods:[{name:`${plu.organic?'Organic ':''}${food.name}`,calories:food.calories,protein:food.protein,carbs:food.carbs,fat:food.fat,source:'IFPS PLU',servingGrams:100}],note:`PLU ${q.q} matched ${plu.organic?'organic ':''}${food.name}. Nutrition is an approximate local reference value per 100 g; adjust the portion before saving.`});
+     }
+   }
+   if(/^\\d{4,5}$/.test(q.q)) return json({foods:[],note:'That looks like a produce PLU, but Bloom does not have that PLU mapped yet. You can still enter the food manually. PLUs are not product barcodes.'});
+ }
  const local=barcode?[]:[...library,...drinkLibrary].filter(f=>{
    const name=f.name.toLowerCase();
    if(name.includes(term)||name.replace(/[^a-z0-9]+/g,'').includes(compactTerm)) return true;
