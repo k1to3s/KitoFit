@@ -21,6 +21,12 @@ const loadModel = () => pipeline("image-classification", MODEL_ID, {
 });
 
 let modelPromise: ReturnType<typeof loadModel> | null = null;
+let fruitModelPromise: Promise<any> | null = null;
+const FRUIT_LABELS = ["apple","banana","grapes","kiwi","lemon","lime","mango","orange","pear","pineapple","pomegranate","watermelon","peach","cherry","papaya","cantaloupe","honeydew","raspberries","blackberries"];
+const loadFruitModel = async () => {
+  const { pipeline: fruitPipeline } = await import("@huggingface/transformers");
+  return fruitPipeline("zero-shot-image-classification", "Xenova/clip-vit-base-patch32", { device: "wasm", dtype: "q8" as any });
+};
 self.onmessage = async (event: MessageEvent<ClassifyMessage>) => {
   if (event.data.type !== "classify") return;
   const { requestId, image } = event.data;
@@ -36,7 +42,21 @@ self.onmessage = async (event: MessageEvent<ClassifyMessage>) => {
     self.postMessage({ type: "analyzing", requestId });
     const pixels = await RawImage.read(image);
     const predictions = await classifier(pixels, { top_k: 5 });
-    self.postMessage({ type: "complete", requestId, predictions });
+    const top = predictions?.[0];
+    let fruitPredictions: {label:string;score:number}[] = [];
+    // Food101 remains the primary model. If it does not confidently identify a
+    // fruit, use the same Transformers.js worker for a fruit-specific second pass.
+    if (!top || Number(top.score) < 0.55) {
+      if (!fruitModelPromise) fruitModelPromise = loadFruitModel().catch((error: unknown) => { fruitModelPromise = null; throw error; });
+      try {
+        const fruitClassifier = await fruitModelPromise;
+        const fruitResults = await fruitClassifier(pixels, FRUIT_LABELS, { top_k: 5 });
+        fruitPredictions = fruitResults.map((x: any) => ({ label: String(x.label), score: Number(x.score) }));
+      } catch {
+        fruitPredictions = [];
+      }
+    }
+    self.postMessage({ type: "complete", requestId, predictions, fruitPredictions });
   } catch (error) {
     self.postMessage({
       type: "error", requestId,
