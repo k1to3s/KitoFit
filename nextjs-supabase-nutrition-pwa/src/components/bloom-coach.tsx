@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, LoaderCircle, Send, Sparkles, Trash2, X } from 'lucide-react';
+import { LoaderCircle, Send, Sparkles, Trash2, X } from 'lucide-react';
 import type { Data } from './dashboard';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
@@ -162,7 +162,6 @@ export function BloomCoachDialog({ data, close, fullPage = false }: { data: Data
       <div><span className="coach-label">BLOOM KITO COACH</span><h2>Your local wellness coach</h2><p>{status}</p></div>
       {close&&<button className="icon-button" onClick={close} aria-label="Close Bloom Kito Coach"><X size={19}/></button>}
     </div>
-    <div className="coach-local-note"><Bot size={16}/><span>Your messages and Bloom data stay in this browser while local AI is running. The model is downloaded once and cached on your device.</span></div>
     {!messages.length && <div className="coach-welcome"><h3>What can I help with?</h3><div className="coach-suggestions">{suggestions.map(s => <button key={s} onClick={() => send(s)} disabled={busy}>{s}</button>)}</div></div>}
     <div className="coach-chat-messages" aria-live="polite">
       {messages.map((m, i) => <div className={'coach-chat-bubble ' + m.role} key={i}><span>{m.role === 'user' ? 'You' : 'Bloom Kito Coach'}</span><p>{m.content}</p></div>)}
