@@ -334,3 +334,5 @@ html[data-theme="dark"] .coach-chat-bubble.user{color:#101010}
 .modal-auth .auth-links button{font-size:12px}
 .modal-auth .source-note{text-align:center;max-width:430px;margin:28px auto 0;line-height:1.6}
 @media(max-width:520px){.modal-auth .modal-heading{padding-top:clamp(42px,8vh,70px)}.modal-auth .modal-body{padding-left:22px;padding-right:22px}}
+
+.auth-logo-wrap{display:flex;justify-content:center;margin:0 0 16px}.auth-logo{width:72px;height:72px;border-radius:20px;display:block;box-shadow:0 8px 24px #345e4d22}
