@@ -29,7 +29,7 @@ export default function Dashboard(){
  const openFood=(tab='Search',m='Breakfast',food?:Food)=>{setFoodTab(tab);setMeal(m);setEditing(food);setDialog('food');};
  const shiftDate=(days:number)=>{const d=new Date(`${date}T12:00:00`);d.setDate(d.getDate()+days);setDate(localDate(d));};
  const totals=data.foods.reduce((a,f)=>({calories:a.calories+f.calories,protein:a.protein+f.protein,carbs:a.carbs+f.carbs,fat:a.fat+f.fat}),{calories:0,protein:0,carbs:0,fat:0});
- const remaining=Math.max(0,Math.round(data.targets.calories-totals.calories));
+ const remaining=Math.max(0,Math.round(data.targets.calories-totals.calories)); const waterOz=Math.round(data.water/29.5735);const targetOz=Math.round(data.targets.water/29.5735);
  const water=async(amount:number)=>{if(busy)return;setBusy(true);try{await save('water',date,{amount:Math.max(0,Math.min(15000,data.water+amount))});await reload();notify(amount>0?'A little sip, a little progress. Water added.':'Water updated.');}catch(e){notify((e as Error).message);}finally{setBusy(false);}};
  const take=async(s:Entity)=>{try{const existing=data.taken.find(t=>t.data.supplementId===s.id);if(existing)await remove('supplementLog',existing.id);else await save('supplementLog',date,{supplementId:s.id,name:s.data.name,dose:s.data.dose,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),notes:''});await reload();}catch(e){notify((e as Error).message);}};
  const todayLabel=date===initialDate?'Today':new Date(`${date}T12:00:00`).toLocaleDateString('en-US',{weekday:'short'});
