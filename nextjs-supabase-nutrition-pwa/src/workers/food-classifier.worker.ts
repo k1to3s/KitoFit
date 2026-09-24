@@ -46,7 +46,9 @@ self.onmessage = async (event: MessageEvent<ClassifyMessage>) => {
     let fruitPredictions: {label:string;score:number}[] = [];
     // Food101 remains the primary model. If it does not confidently identify a
     // fruit, use the same Transformers.js worker for a fruit-specific second pass.
-    if (!top || Number(top.score) < 0.55) {
+    const foodFruitIds = new Set(["apple","banana","grapes","kiwi","lemon","lime","mango","orange","pear","pineapple","pomegranate","watermelon","peach","cherry","papaya","cantaloupe","honeydew","raspberries","blackberries","strawberries"]);
+    const foodIsFruit = String(top?.label || "").toLowerCase().replace(/[^a-z0-9]+/g, "_") in Object.fromEntries(Array.from(foodFruitIds).map(x => [x, true]));
+    if (!foodIsFruit) {
       if (!fruitModelPromise) fruitModelPromise = loadFruitModel().catch((error: unknown) => { fruitModelPromise = null; throw error; });
       try {
         const fruitClassifier = await fruitModelPromise;
